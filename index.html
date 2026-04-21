@@ -1,9 +1,91 @@
+<html>
 <head>
-	<title>pur.pl</title>
+	<style>
+		body { margin: 0 }
+		canvas { display: block; width: 100vw; height: 100vh }
+	</style>
 </head>
-
 <body>
-	<main>
-		Test
-	</main>
+	<canvas id="c"></canvas>
+	<script>
+		const canvas = document.getElementById('c');
+		const gl = canvas.getContext('webgl');
+
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+
+		// ===== Vertex Shader =====
+		const vertSrc = `
+			attribute vec2 a_pos;
+			void main() {
+				gl_Position = vec4(a_pos, 0.0, 1.0);
+			}
+		`;
+		
+		// ===== Fragment Shader =====
+		const fragSrc = `
+			precision highp float;
+			uniform vec3 iResolution;
+			uniform float iTime;
+ 
+			void main() {
+				vec2 uv = gl_FragCoord.xy / iResolution.xy;
+				vec3 purpleDark = vec3(0.15, 0.0, 0.25);
+				vec3 purpleLight = vec3(0.75, 0.25, 0.50);
+				vec3 t = 0.5 + 0.35 * cos(iTime + uv.xyx + vec3(0.0, 2.0, 4.0));
+				gl_FragColor = vec4(mix(purpleDark, purpleLight, t), 1.0);
+			}
+		`;
+
+// ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
+
+		
+		// ===== Program setup =====
+		function addShader(type, src) {
+			const s = gl.createShader(type);
+			gl.shaderSource(s, src);
+			gl.compileShader(s);
+			gl.attachShader(program, s);
+		}
+ 
+		const program = gl.createProgram();
+		addShader(gl.VERTEX_SHADER, vertSrc);
+		addShader(gl.FRAGMENT_SHADER, fragSrc);
+		gl.linkProgram(program);
+		gl.useProgram(program);
+ 
+		// ===== Quad =====
+		gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+			-1,-1, 1,-1, -1,1,
+			-1, 1, 1,-1,  1,1,
+		]), gl.STATIC_DRAW);
+ 
+		const pos = gl.getAttribLocation(program, 'a_pos');
+		gl.enableVertexAttribArray(pos);
+		gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+ 
+		// ===== Uniform Locations =====
+		const uRes = gl.getUniformLocation(program, 'iResolution');
+		const uTime = gl.getUniformLocation(program, 'iTime');
+ 
+		// ===== Resize Handler =====
+		function resize() {
+			canvas.width = window.innerWidth;
+			canvas.height = window.innerHeight;
+			gl.viewport(0, 0, canvas.width, canvas.height);
+		}
+		window.addEventListener('resize', resize);
+		resize();
+ 
+		// ===== Render =====
+		function render() {
+			gl.uniform3f(uRes, canvas.width, canvas.height, 1.0);
+			gl.uniform1f(uTime, performance.now() / 1000);
+			gl.drawArrays(gl.TRIANGLES, 0, 6);
+			requestAnimationFrame(render);
+		}
+ 
+		requestAnimationFrame(render);
+	</script>
 </body>
+</html>
