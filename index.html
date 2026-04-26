@@ -1,92 +1,495 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-	<title>💜 purpl 💜</title>
-	<style>
-		body { margin: 0 }
-		canvas { display: block; width: 100vw; height: 100vh }
-	</style>
+
+<title>💜 purpl 💜</title>
+
+<style>
+	* {
+		margin: 0;
+		padding: 0;
+		box-sizing:
+		border-box;
+	}
+	
+	body {
+		overflow: hidden;
+	}
+	
+	#bg {
+		z-index: 1;
+	}
+	
+	#dice-container { 
+		z-index: 2;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+	}
+</style>
+
+<script type="importmap">
+{
+	"imports": {
+		"three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+		"three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+	}
+}
+</script>
 </head>
+
 <body>
-	<canvas id="c"></canvas>
-	<script>
-		const canvas = document.getElementById('c');
-		const gl = canvas.getContext('webgl');
+
+	<canvas id="bg"></canvas>
+	<div id="dice-container"></div>
+
+<script type="module">
+
+// ===== Imports =====
+
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 
-		// ===== Vertex Shader =====
-		const vertSrc = `
-			attribute vec2 a_pos;
-			void main() {
-				gl_Position = vec4(a_pos, 0.0, 1.0);
-			}
-		`;
-		
-		// ===== Fragment Shader =====
-		const fragSrc = `
-			precision highp float;
-			uniform vec3 iResolution;
-			uniform float iTime;
- 
-			void main() {
-				vec2 uv = gl_FragCoord.xy / iResolution.xy;
-				vec3 purpleDark = vec3(0.15, 0.0, 0.25);
-				vec3 purpleLight = vec3(0.75, 0.25, 0.50);
-				vec3 t = 0.5 + 0.35 * cos(iTime + uv.xyx + vec3(0.0, 2.0, 4.0));
-				gl_FragColor = vec4(mix(purpleDark, purpleLight, t), 1.0);
-			}
-		`;
+// ===== BACKGROUND =====
+
+const bgCanvas = document.getElementById('bg');
+const gl = bgCanvas.getContext('webgl', { alpha: true });
+
+// ===== Vertex Shader =====
+const vertSrc = `
+	attribute vec2 a_pos;
+	void main() {
+		gl_Position = vec4(a_pos, 0.0, 1.0);
+	}
+`;
+
+// ===== Fragment Shader =====
+const fragSrc = `
+	precision highp float;
+	uniform vec3 iResolution;
+	uniform float iTime;
+
+	void main() {
+		vec2 uv = gl_FragCoord.xy / iResolution.xy;
+
+		float time = iTime * 0.2;
+
+		float wave1 = sin(uv.x * 4.0 + uv.y * 3.0 + time) * 0.5;
+		float wave2 = sin(uv.y * 5.0 - time * 1.2) * 0.4;
+		float wave3 = cos((uv.x - uv.y) * 6.0 + time * 0.8) * 0.3;
+
+		float t = 0.5 + 0.5 * (wave1 + wave2 + wave3);
+
+		t += sin(time * 0.4) * 0.08;
+
+		vec3 dark   = vec3(0.08, 0.02, 0.22);
+		vec3 mid    = vec3(0.55, 0.20, 0.65);
+		vec3 light  = vec3(0.88, 0.45, 0.92);
+		vec3 accent = vec3(0.75, 0.25, 0.80);
+
+		vec3 col = mix(dark, mid, t);
+		col = mix(col, light, smoothstep(0.4, 0.8, t));
+		col = mix(col, accent, smoothstep(0.7, 1.0, t) * 0.6);
+
+		float vig = 1.0 - 0.4 * length(uv - 0.5);
+		col *= vig * 1.05;
+
+		gl_FragColor = vec4(col, 1.0);
+	}
+`;
+
+// ===== Setup =====
+
+const program = gl.createProgram();
+
+function addShader(type, src) {
+	const s = gl.createShader(type);
+	gl.shaderSource(s, src);
+	gl.compileShader(s);
+	gl.attachShader(program, s);
+}
+
+addShader(gl.VERTEX_SHADER, vertSrc);
+addShader(gl.FRAGMENT_SHADER, fragSrc);
+gl.linkProgram(program);
+gl.useProgram(program);
+
+
+// ===== Quad =====
+
+const buffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+	-1, -1,  1, -1,  -1, 1,
+	-1,  1,  1, -1,   1, 1
+]), gl.STATIC_DRAW);
+
+const posLoc = gl.getAttribLocation(program, 'a_pos');
+gl.enableVertexAttribArray(posLoc);
+gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+// ===== Uniforms =====
+
+const uRes = gl.getUniformLocation(program, 'iResolution');
+const uTime = gl.getUniformLocation(program, 'iTime');
+
+// ===== Events =====
+
+function resizeBG() {
+	bgCanvas.width = window.innerWidth;
+	bgCanvas.height = window.innerHeight;
+	gl.viewport(0, 0, bgCanvas.width, bgCanvas.height);
+}
+window.addEventListener('resize', resizeBG);
+resizeBG();
+
+// ===== Render =====
+
+function renderBG() {
+	gl.uniform3f(uRes, bgCanvas.width, bgCanvas.height, 1.0);
+	gl.uniform1f(uTime, performance.now() / 1000);
+	gl.drawArrays(gl.TRIANGLES, 0, 6);
+	requestAnimationFrame(renderBG);
+}
+requestAnimationFrame(renderBG);
 
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 
-		
-		// ===== Program setup =====
-		function addShader(type, src) {
-			const s = gl.createShader(type);
-			gl.shaderSource(s, src);
-			gl.compileShader(s);
-			gl.attachShader(program, s);
+// ===== DICE =====
+
+const diceContainer = document.getElementById('dice-container');
+
+// ===== Shader Parameters =====
+
+const primaryEnergy = '#C9C9C9';
+const secondaryEnergy = '#000000';
+const speed = 0.1;
+const density = 2.0;
+const diceRotation = 0.4;
+
+const shellGlow = 0.3;
+const shellLevel = 2.;
+const shellScale = 1.03;
+
+const fractalIters = 3;
+const fractalScale = 0.7;
+const fractalDecay = -25.0;
+const internalAnim = 0.8;
+const smoothness = 0.001;
+const asymmetry = 0.0;
+const marchStep = 0.05;
+
+const chromaticAberration = 0.015;
+
+// ===== Setup =====
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+camera.position.set(0, 0, 6);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+diceContainer.appendChild(renderer.domElement);
+
+// ===== Controls =====
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.enablePan = false;
+controls.minDistance = 12;
+controls.maxDistance = 50;
+
+// ===== Vertex Shader =====
+
+const vertexShader = `
+	varying vec3 vLocalPosition;
+	varying vec3 vNormal;
+	varying vec3 vViewPosition;
+	void main() {
+		vLocalPosition = position;
+		vNormal = normalize(normalMatrix * normal);
+		vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+		vViewPosition = -mvPos.xyz;
+		gl_Position = projectionMatrix * mvPos;
+	}
+`;
+
+// ===== Fragment Shader =====
+
+const fragmentShader = `
+	uniform float uTime;
+	uniform vec3 uLocalCamPos;
+	uniform vec3 uPrimaryColor;
+	uniform vec3 uSecondaryColor;
+	uniform float uDensity;
+	uniform float uFractalIters;
+	uniform float uFractalScale;
+	uniform float uFractalDecay;
+	uniform float uInternalAnim;
+	uniform float uSmoothness;
+	uniform float uAsymmetry;
+	varying vec3 vLocalPosition;
+	varying vec3 vNormal;
+	varying vec3 vViewPosition;
+
+	float evaluateStructure(vec3 pos) {
+		float densityAcc = 0.0;
+		vec3 anchor = pos;
+		float animTime = uTime * uInternalAnim;
+		float s = sin(animTime), c = cos(animTime);
+		mat2 rotAnim = mat2(c, s, -s, c);
+		float a = 0.5 * uAsymmetry;
+		mat2 rotAsym1 = mat2(cos(a), sin(a), -sin(a), cos(a));
+		float b = 0.3 * uAsymmetry;
+		mat2 rotAsym2 = mat2(cos(b), sin(b), -sin(b), cos(b));
+		for (int step = 0; step < 12; ++step) {
+			if (float(step) >= uFractalIters) break;
+			pos.xy *= rotAnim;
+			pos.yz *= rotAnim;
+			pos.xz *= rotAsym1;
+			pos.yz *= rotAsym2;
+			pos += vec3(0.05, -0.02, 0.03) * uAsymmetry;
+			vec3 foldedPos = sqrt(pos * pos + uSmoothness);
+			float magnitudeSq = max(dot(foldedPos, foldedPos), 0.00001);
+			pos = (uFractalScale * foldedPos / magnitudeSq) - uFractalScale;
+			float ySq = pos.y * pos.y, zSq = pos.z * pos.z, yz2 = 2.0 * pos.y * pos.z;
+			pos.yz = vec2(ySq - zSq, yz2);
+			pos = vec3(pos.z, pos.x, pos.y);
+			densityAcc += exp(uFractalDecay * abs(dot(pos, anchor)));
 		}
- 
-		const program = gl.createProgram();
-		addShader(gl.VERTEX_SHADER, vertSrc);
-		addShader(gl.FRAGMENT_SHADER, fragSrc);
-		gl.linkProgram(program);
-		gl.useProgram(program);
- 
-		// ===== Quad =====
-		gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-			-1,-1, 1,-1, -1,1,
-			-1, 1, 1,-1,  1,1,
-		]), gl.STATIC_DRAW);
- 
-		const pos = gl.getAttribLocation(program, 'a_pos');
-		gl.enableVertexAttribArray(pos);
-		gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
- 
-		// ===== Uniform Locations =====
-		const uRes = gl.getUniformLocation(program, 'iResolution');
-		const uTime = gl.getUniformLocation(program, 'iTime');
- 
-		// ===== Resize Handler =====
-		function resize() {
-			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight;
-			gl.viewport(0, 0, canvas.width, canvas.height);
+		return densityAcc * 0.5;
+	}
+
+	vec2 getVolumeBounds(vec3 origin, vec3 dir, float radius) {
+		float b = dot(origin, dir);
+		float c = dot(origin, origin) - radius * radius;
+		float discriminant = b * b - c;
+		if (discriminant < 0.0) return vec2(-1.0);
+		float root = sqrt(discriminant);
+		return vec2(-b - root, -b + root);
+	}
+
+	vec3 traceEnergy(vec3 origin, vec3 dir, vec2 limits) {
+		float currentDepth = limits.x;
+		float uMarchStep = 0.03;
+		vec3 finalEnergy = vec3(0.0);
+		float fieldVal = 0.0;
+		for (int i = 0; i < 64; i++) {
+			currentDepth += uMarchStep * exp(-2.0 * fieldVal);
+			if (currentDepth > limits.y) break;
+			vec3 samplePoint = origin + currentDepth * dir;
+			fieldVal = evaluateStructure(samplePoint);
+			float vSq = fieldVal * fieldVal;
+			float gradientBlend = smoothstep(0.0, 0.4, fieldVal);
+			vec3 gradient = mix(uSecondaryColor, uPrimaryColor, gradientBlend);
+			vec3 emission = gradient * (fieldVal * 1.8 + vSq * 1.0);
+			finalEnergy = 0.99 * finalEnergy + (0.08 * uDensity) * emission;
 		}
-		window.addEventListener('resize', resize);
-		resize();
- 
-		// ===== Render =====
-		function render() {
-			gl.uniform3f(uRes, canvas.width, canvas.height, 1.0);
-			gl.uniform1f(uTime, performance.now() / 1000);
-			gl.drawArrays(gl.TRIANGLES, 0, 6);
-			requestAnimationFrame(render);
+		return finalEnergy;
+	}
+
+	void main() {
+		vec3 rayOrig = uLocalCamPos;
+		vec3 rayDir = normalize(vLocalPosition - uLocalCamPos);
+		float t = uTime * 0.001, s = sin(t), c = cos(t);
+		mat2 rotXZ = mat2(c, s, -s, c);
+		rayOrig.xz *= rotXZ;
+		rayDir.xz *= rotXZ;
+		vec2 limits = getVolumeBounds(rayOrig, rayDir, 2.0);
+		if (limits.x < 0.0) discard;
+		vec3 volumeColor = traceEnergy(rayOrig, rayDir, limits);
+		vec3 normal = normalize(vNormal);
+		vec3 viewDir = normalize(vViewPosition);
+		float facingRatio = max(dot(normal, viewDir), 0.0);
+		float edgeAA = smoothstep(0.0, 0.05, facingRatio);
+		vec3 finalColor = 0.5 * log(1.0 + volumeColor);
+		finalColor = clamp(finalColor, 0.0, 1.0) * edgeAA;
+		float maxLuma = max(finalColor.r, max(finalColor.g, finalColor.b));
+		float alpha = clamp(maxLuma * 1.5, 0.0, 1.0) * edgeAA;
+		gl_FragColor = vec4(finalColor, alpha);
+	}
+`;
+
+// ===== Outer Shell =====
+
+const shellVertexShader = `
+	varying vec3 vNormal;
+	varying vec3 vViewPosition;
+	void main() {
+		vNormal = normalize(normalMatrix * normal);
+		vec4 mv = modelViewMatrix * vec4(position, 1.0);
+		vViewPosition = -mv.xyz;
+		gl_Position = projectionMatrix * mv;
+	}
+`;
+
+const shellFragmentShader = `
+	uniform vec3 uColor;
+	uniform float uGlow;
+	uniform float uLevel;
+	varying vec3 vNormal;
+	varying vec3 vViewPosition;
+	void main() {
+		vec3 n = normalize(vNormal);
+		vec3 v = normalize(vViewPosition);
+		float vdn = max(dot(n, v), 0.0);
+		float edgeFade = smoothstep(0.0, 0.15, vdn);
+		float innerFade = clamp(1.0 - uLevel, 0.0, 0.99);
+		float centerFade = smoothstep(1.0, innerFade, vdn);
+		float alpha = edgeFade * centerFade * uGlow;
+		gl_FragColor = vec4(uColor, alpha);
+	}
+`;
+
+// ===== Chromatic Abberation =====
+
+const ChromaticAberrationShader = {
+	uniforms: {
+		tDiffuse: { value: null },
+		uAmount: { value: chromaticAberration }
+	},
+	vertexShader: `
+	varying vec2 vUv; void main() {
+		vUv = uv;
+		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 		}
- 
-		requestAnimationFrame(render);
-	</script>
+	`,
+
+	fragmentShader: `
+		uniform sampler2D tDiffuse;
+		uniform float uAmount;
+		varying vec2 vUv;
+		void main() {
+			vec4 base = texture2D(tDiffuse, vUv);
+			float luma = max(base.r, max(base.g, base.b));
+			float mask = smoothstep(0.01, 0.1, luma);
+			vec2 offset = (vUv - 0.5) * uAmount;
+			float r = texture2D(tDiffuse, vUv + offset).r;
+			float g = texture2D(tDiffuse, vUv).g;
+			float b = texture2D(tDiffuse, vUv - offset).b;
+			gl_FragColor = vec4(mix(base.rgb, vec3(r, g, b), mask), 0.0);
+		}
+	`
+};
+
+// ===== Uniforms =====
+
+const uniforms = {
+	uTime: { value: 0 },
+	uLocalCamPos: { value: new THREE.Vector3() },
+	uPrimaryColor: { value: new THREE.Color(primaryEnergy) },
+	uSecondaryColor: { value: new THREE.Color(secondaryEnergy) },
+	uDensity: { value: density },
+	uFractalIters: { value: fractalIters },
+	uFractalScale: { value: fractalScale },
+	uFractalDecay: { value: fractalDecay },
+	uInternalAnim: { value: internalAnim },
+	uSmoothness: { value: smoothness },
+	uAsymmetry: { value: asymmetry },
+	uMarchStep: { value: marchStep }
+};
+
+const shellUniforms = {
+	uColor: { value: new THREE.Color(primaryEnergy) },
+	uGlow: { value: shellGlow },
+	uLevel: { value: shellLevel }
+};
+
+// ===== Mats =====
+
+const material = new THREE.ShaderMaterial({
+	vertexShader, fragmentShader, uniforms,
+	transparent: true,
+	side: THREE.DoubleSide,
+	depthWrite: false,
+	blending: THREE.AdditiveBlending
+});
+
+const shellMaterial = new THREE.ShaderMaterial({
+	vertexShader: shellVertexShader,
+	fragmentShader: shellFragmentShader,
+	uniforms: shellUniforms,
+	transparent: true,
+	side: THREE.FrontSide,
+	depthWrite: false,
+	blending: THREE.AdditiveBlending
+});
+
+// ===== Geometry =====
+
+const geometry = new THREE.IcosahedronGeometry(2.0, 0);
+const dice = new THREE.Mesh(geometry, material);
+const shellMesh = new THREE.Mesh(geometry, shellMaterial);
+shellMesh.scale.setScalar(shellScale);
+dice.add(shellMesh);
+scene.add(dice);
+
+const renderTarget = new THREE.WebGLRenderTarget(
+	window.innerWidth, 
+	window.innerHeight, 
+	{
+		minFilter: THREE.LinearFilter,
+		magFilter: THREE.LinearFilter,
+		format: THREE.RGBAFormat,
+		stencilBuffer: false
+	}
+);
+
+// ===== Render =====
+
+const composer = new EffectComposer(renderer, renderTarget);
+composer.addPass(new RenderPass(scene, camera));
+const caPass = new ShaderPass(ChromaticAberrationShader);
+composer.addPass(caPass);
+
+// ===== Events =====
+
+function resizeDice() {
+	const size = Math.max(window.innerWidth, window.innerHeight, 720);
+	diceContainer.style.width = size + 'px';
+	diceContainer.style.height = size + 'px';
+	camera.updateProjectionMatrix();
+	renderer.setSize(size, size);
+	composer.setSize(size, size); 
+}
+
+window.addEventListener('resize', () => {
+	resizeBG();
+	resizeDice();
+});
+resizeDice();
+
+// ===== Animate =====
+
+const clock = new THREE.Clock();
+
+function animate() {
+	requestAnimationFrame(animate);
+
+	const dt = clock.getDelta();
+
+	uniforms.uTime.value += dt * speed;
+	dice.rotation.y += dt * diceRotation;
+	dice.rotation.x += dt * diceRotation * 0.5;
+
+	dice.updateMatrixWorld();
+	const localCam = new THREE.Vector3().copy(camera.position);
+	dice.worldToLocal(localCam);
+	uniforms.uLocalCamPos.value.copy(localCam);
+	
+	controls.update();
+	composer.render();
+}
+
+animate();
+
+</script>
 </body>
 </html>
