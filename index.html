@@ -54,6 +54,10 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 
+// ===== Utilities =====
+
+const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
+
 // ===== ===== ===== ===== ===== ===== ===== ===== ===== =====
 
 // ===== BACKGROUND =====
@@ -167,9 +171,6 @@ const diceContainer = document.getElementById('dice-container');
 
 // ===== Shader Parameters =====
 
-// At top of script
-const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent) || window.innerWidth < 768;
-
 const primaryEnergy = '#C9C9C9';
 const secondaryEnergy = '#000000';
 const speed = 0.1;
@@ -187,9 +188,9 @@ const internalAnim = 0.8;
 const smoothness = 0.001;
 const asymmetry = 0.0;
 
-const marchStep = isMobile ? 0.02 : 0.03;
-const maxSteps = isMobile ? 35 : 60;
-const structSteps = isMobile ? 6 : 12;
+const marchStep = 0.03;
+const maxSteps = 60;
+const structSteps = 12;
 
 const chromaticAberration = 0.015;
 
@@ -202,10 +203,8 @@ camera.position.set(0, 0, 6);
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
 renderer.shadowMap.enabled = false;
-renderer.antialias = !isMobile;
 
 let dpr = Math.min(window.devicePixelRatio, 2);
-if (isMobile) dpr = 1;
 renderer.setPixelRatio(dpr);
 diceContainer.appendChild(renderer.domElement);
 
@@ -506,7 +505,10 @@ function animate() {
 	composer.render();
 }
 
-animate();
+if (!isMobile) {
+	animate();
+}
+
 
 </script>
 </body>
