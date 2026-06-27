@@ -1,0 +1,166 @@
+body{
+    margin:0;
+    background:#05052d;
+    color:#9dffd5;
+    font-family:"Comic Sans MS",Verdana,sans-serif;
+    background:
+        radial-gradient(circle at 20% 20%, #4b0082 0, transparent 25%),
+        radial-gradient(circle at 80% 60%, #001166 0, transparent 30%),
+        linear-gradient(#12003b,#000015);
+}
+
+#page{
+    max-width:900px;
+    width:min(92vw,900px);
+    margin:20px auto;
+    background:#151550;
+    border:5px ridge hotpink;
+    padding:16px;
+    box-sizing:border-box;
+}
+
+h1{
+    margin:0;
+    text-align:center;
+    color:#ffff55;
+    text-shadow:3px 3px deeppink;
+    font-size:clamp(2rem,5vw,3rem);
+}
+
+marquee{
+    background:#ff1493;
+    color:white;
+    font-weight:bold;
+    padding:8px;
+    margin:16px 0;
+}
+
+nav{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:20px;
+}
+
+nav a{
+    background:#2b2b90;
+    color:#ffb5ff;
+    padding:8px 14px;
+    border:2px outset cyan;
+    text-decoration:none;
+    font-weight:bold;
+}
+
+nav a:hover{
+    background:#ff1493;
+    color:white;
+}
+
+.box{
+    background:#23236b;
+    border:3px outset cyan;
+    padding:14px;
+    margin:18px 0;
+}
+
+h2{
+    margin-top:0;
+    color:#6fffff;
+    border-bottom:2px dashed hotpink;
+    padding-bottom:4px;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+td{
+    border:1px solid #6666ff;
+    padding:8px;
+}
+
+ul{
+    padding-left:20px;
+}
+
+a{
+    color:#ff99ff;
+}
+
+.counter{
+    margin-top:25px;
+    text-align:center;
+    font-size:1.3rem;
+    color:yellow;
+    font-family:monospace;
+}
+
+.footer{
+    margin-top:20px;
+    text-align:center;
+    font-size:.85rem;
+    color:#ccccff;
+}
+
+.blink{
+    animation:blink 1s step-end infinite;
+}
+
+@keyframes blink{
+    50%{opacity:0;}
+}
+
+textarea,
+input[type=text]{
+    width:100%;
+    max-width:100%;
+    box-sizing:border-box;
+    background:#111144;
+    color:white;
+    border:2px inset hotpink;
+    padding:8px;
+    margin:6px 0;
+}
+
+input[type=submit],
+input[type=reset]{
+    margin:4px;
+    padding:8px 16px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+pre{
+    text-align:center;
+    color:#99ffdd;
+    overflow:auto;
+}
+
+@media (max-width:600px){
+
+nav{
+    flex-direction:column;
+}
+
+nav a{
+    text-align:center;
+}
+
+table,
+tbody,
+tr,
+td{
+    display:block;
+}
+
+td{
+    border-bottom:none;
+}
+
+td:first-child{
+    font-weight:bold;
+    background:#303080;
+}
+}
