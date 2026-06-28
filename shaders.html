@@ -3,9 +3,38 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎶 Music 🎶</title>
+<title>✨ Shaders ✨</title>
 
 <link rel="stylesheet" type="text/css" href="90s-style.css">
+
+<style>
+.warning {
+    background: linear-gradient(
+        90deg,
+        #ff0000,
+        #ff7000,
+        #ff0000
+    );
+    background-size: 200% 100%;
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+
+    animation: gradient-scroll 4s linear infinite;
+}
+
+@keyframes gradient-scroll {
+    from {
+        background-position: 0% 0;
+    }
+    to {
+        background-position: 200% 0;
+    }
+}
+</style>
+
 </head>
 
 <body>
@@ -26,22 +55,44 @@
 <a href="shaders.html">SHADERS</a>
 </nav>
 
+<h1>✨ Shaders ✨</h1>
 
 <div class="box">
 <h2>Koch Dice</h2>
-<p>Generative pattern utilising a multidimensional koch snowflake.<br>
-Not well optimised, only visit on home computers.<br><br>
-<a href="https://purpl.pur.pl/"><img src="/shaders/koch-preview.png" width=100%></a>
+<p>Generative pattern utilising a multidimensional koch snowflake.</p>
+<p class="warning" style="color: #ff0000">⚠️ Not well optimised, only visit on home computers ⚠️</p>
+<a href="https://purpl.pur.pl/shader-purpl.html">
+	<video id="koch" autoplay muted loop width=100%>
+		<source src="/videos/koch.mp4" type="video/mp4" />
+	</video>
+</a>
 </p>
 
 </div>
 
+
+<div class="box">
+<h2>Star Fields</h2>
+<p>Based on the Va1ha11a code</p>
+<a href="https://www.shadertoy.com/view/3XVcWV">
+<video id="mandelbrot" autoplay loop width=100%>
+    <source src="/videos/starfield-1.webm" type="video/webm" />
+</video>
+</a>
+<a href="https://www.shadertoy.com/view/W3KyDd">
+<video id="mandelbrot" autoplay loop width=100%>
+    <source src="/videos/starfield-2.webm" type="video/webm" />
+</video>
+</a>
+</div>
+
+
 <div class="box">
 <h2>Va1ha11a</h2>
-<p>Visualiser I designed for a friend's song. Audio reactive variables.</p>
+<p>Visualiser designed for a friend's music video. Audio reactive.</p>
 
 <iframe width="100%" style="aspect-ratio:16/9" src="https://www.youtube-nocookie.com/embed/CNfMUFx8a3Q?si=JGt6mO1vmKYQdwGp" title="YouTube video player" frameborder="0" allow="encrypted-media" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
+<a href="https://www.shadertoy.com/view/t3cBzN"><p>Shadertoy source</p></a>
 </div>
 
 <div class="box">
